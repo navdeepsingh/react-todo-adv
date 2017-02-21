@@ -1,0 +1,96 @@
+import React, {Component} from 'react';
+import TodoWrapper from '../components/TodoWrapper';
+import Title from '../components/Title';
+import TodoForm from '../components/TodoForm';
+import TodoList from '../components/TodoList';
+import axios from 'axios';
+
+class App extends Component {
+
+  // Initialise state here in ES7 or ES6 constructor method
+  //state = { data : [], input : ''}
+  constructor(props){
+    // Pass props to parent class
+    super(props);
+    this.hanleRemoveTodo = this.hanleRemoveTodo.bind(this);
+    // Set initial state
+    this.state = {
+      data: [],
+      input : ''
+    }
+    this.apiUrl = 'http://58ac10fdf989751200f992ff.mockapi.io/api/v1/todos';
+  }
+
+  // Lifecycle method
+  componentDidMount(){
+   // Make HTTP reques with Axios
+   axios.get(this.apiUrl)
+     .then((res) => {
+       // Set state with result
+       this.setState({data:res.data});
+     });
+  }
+
+  handleChange = (e) => {
+    this.setState({ input: e.target.value });
+  }
+
+  handleSubmitTodo = (event) => {
+    event.preventDefault();
+
+    // If nothing entered, do nothing
+    if (this.state.input === '') return false;
+
+    const exist = this.state.data.find((value, index) => {
+      return value.text === this.state.input;
+    })
+
+    if (exist !== undefined) {
+      this.reset();
+      return false;
+    }
+
+    // Assemble data
+    const todo = {text: this.state.input}
+    // Update data
+    axios.post(this.apiUrl, todo)
+      .then((res) => {
+          this.state.data.push(res.data);
+          this.setState({data: this.state.data})
+          this.reset();
+      });
+  }
+
+  reset = () => {
+      document.getElementById('todoBox').value = '';
+  }
+
+  hanleRemoveTodo = (event, id) => {
+    event.preventDefault();
+
+    axios.delete(this.apiUrl + '/' + id)
+      .then((res) => {
+        const remainder = this.state.data.filter((todo) => {
+           if(todo.id !== id) return todo;
+        });
+        // Update state with filter
+        this.setState({data: remainder});
+      })
+
+
+  }
+
+  render() {
+    return (
+      <TodoWrapper>
+        <Title todoCount={this.state.data.length} />
+        <TodoForm onSubmitTodo={this.handleSubmitTodo} onChangeTodo={this.handleChange} />
+        <TodoList
+          todos={this.state.data}
+          remove={this.hanleRemoveTodo.bind(this)} />
+      </TodoWrapper>
+    )
+  }
+}
+
+export default App;
